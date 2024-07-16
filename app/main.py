@@ -1,13 +1,10 @@
 import socket
+import threading
 
 
-def main():
-    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    client_socket, client_address = server_socket.accept()
-
+def client_request(client_socket):
     request = client_socket.recv(1024).decode("utf-8")
     request_data = request.split("\r\n")
-    print(request_data)
     path = request_data[0].split(" ")[1]
 
     if path == "/":
@@ -30,6 +27,16 @@ def main():
 
     client_socket.send(response)
     client_socket.close()
+
+
+def main():
+    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
+
+    while True:
+        client_socket, client_address = server_socket.accept()
+
+        client_handler = threading.Thread(target=client_request, args=(client_socket,))
+        client_handler.start()
 
 
 if __name__ == "__main__":
