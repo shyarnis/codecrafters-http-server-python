@@ -7,6 +7,7 @@ def main():
 
     request = client_socket.recv(1024).decode("utf-8")
     request_data = request.split("\r\n")
+    print(request_data)
     path = request_data[0].split(" ")[1]
 
     if path == "/":
@@ -16,6 +17,13 @@ def main():
         string: str = path.split("/")[-1]
         # ['', 'echo', 'hello']
         response = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
+
+    elif path.startswith("/user-agent"):
+        user_agent = request_data[2].split(": ")[1]
+        # ['GET /user-agent HTTP/1.1', 'Host: localhost:4221', 'Accept: */*', 'User-Agent: foobar/1.2.3', '', '']
+        # ['Accept', '*/*']
+        # */*
+        response = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(user_agent)}\r\n\r\n{user_agent}".encode()
 
     else:
         response = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
