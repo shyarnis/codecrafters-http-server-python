@@ -1,27 +1,41 @@
 import socket
 import threading
 import sys
+import os
 
 
 def client_request(client_socket):
     request = client_socket.recv(1024).decode("utf-8")
     request_data = request.split("\r\n")
     path = request_data[0].split(" ")[1]
+    body = request_data[-1]
+    request_method = request_data[0].split(" ")[0]
 
+    if request_method == "GET":
+        response = get_request_method(path, request_data)
+
+    if request_method == "POST":
+        response = post_request_method(path, body)
+
+    client_socket.send(response)
+    client_socket.close()
+
+
+def get_request_method(path, request_data):
     if path == "/":
-        response = "HTTP/1.1 200 OK\r\n\r\n".encode()
+        return f"HTTP/1.1 200 OK\r\n\r\n".encode()
 
     elif path.startswith("/echo/"):
         string: str = path.split("/")[-1]
         # ['', 'echo', 'hello']
-        response = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
+        return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
 
     elif path.startswith("/user-agent"):
         user_agent = request_data[2].split(": ")[1]
         # ['GET /user-agent HTTP/1.1', 'Host: localhost:4221', 'Accept: */*', 'User-Agent: foobar/1.2.3', '', '']
         # ['Accept', '*/*']
         # */*
-        response = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(user_agent)}\r\n\r\n{user_agent}".encode()
+        return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(user_agent)}\r\n\r\n{user_agent}".encode()
 
     elif path.startswith("/files"):
         directory = sys.argv[2]
@@ -30,16 +44,33 @@ def client_request(client_socket):
         try:
             with open(f"/{directory}/{filename}", "r") as file:
                 response_body = file.read()
-                response = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(response_body)}\r\n\r\n{response_body}".encode()
+                return f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(response_body)}\r\n\r\n{response_body}".encode()
 
         except FileNotFoundError as e:
-            response = f"HTTP/1.1 404 Not Found\r\n\r\n".encode()
+            return f"HTTP/1.1 404 Not Found\r\n\r\n".encode()
 
     else:
-        response = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
+        return "HTTP/1.1 404 Not Found\r\n\r\n".encode()
 
-    client_socket.send(response)
-    client_socket.close()
+    return
+
+
+def post_request_method(path, body):
+    if path.startswith("/files"):
+        directory = sys.argv[2]
+        filename = path.split("/")[-1]
+        file_path = os.path.join(directory, filename)
+
+        try:
+            # with open(f"/{directory}/{filename}", "w") as file:
+            with open(file_path, "w") as file:
+                file.write(body)
+                return f"HTTP/1.1 201 Created\r\n\r\n".encode()
+
+        except FileNotFoundError as e:
+            return f"HTTP/1.1 404 Not Found\r\n\r\n".encode()
+
+    return
 
 
 def main():
