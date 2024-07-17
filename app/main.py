@@ -1,5 +1,6 @@
 import socket
 import threading
+import sys
 
 
 def client_request(client_socket):
@@ -21,6 +22,18 @@ def client_request(client_socket):
         # ['Accept', '*/*']
         # */*
         response = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(user_agent)}\r\n\r\n{user_agent}".encode()
+
+    elif path.startswith("/files"):
+        directory = sys.argv[2]
+        filename = path.split("/")[-1]
+
+        try:
+            with open(f"/{directory}/{filename}", "r") as file:
+                response_body = file.read()
+                response = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(response_body)}\r\n\r\n{response_body}".encode()
+
+        except FileNotFoundError as e:
+            response = f"HTTP/1.1 404 Not Found\r\n\r\n".encode()
 
     else:
         response = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
