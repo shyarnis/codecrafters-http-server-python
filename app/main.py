@@ -1,5 +1,5 @@
 import socket
-import threading
+import concurrent.futures
 import sys
 import os
 import gzip
@@ -96,11 +96,11 @@ def post_request_method(path, body):
 def main():
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
 
-    while True:
-        client_socket, client_address = server_socket.accept()
+    with concurrent.futures.ThreadPoolExecutor() as executor:
 
-        client_handler = threading.Thread(target=client_request, args=(client_socket,))
-        client_handler.start()
+        while True:
+            client_socket, _ = server_socket.accept()
+            executor.submit(client_request, client_socket)
 
 
 if __name__ == "__main__":
