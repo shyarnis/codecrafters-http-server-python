@@ -2,6 +2,7 @@ import socket
 import threading
 import sys
 import os
+import gzip
 
 
 def client_request(client_socket):
@@ -40,7 +41,11 @@ def get_request_method(path, request_data):
                     break
 
         if compression_scheme == "gzip":
-            return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
+            compressed_content = gzip.compress(string.encode())
+            return (
+                f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: {len(compressed_content)}\r\n\r\n".encode()
+                + compressed_content
+            )
 
         else:
             return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
