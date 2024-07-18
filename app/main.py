@@ -28,7 +28,20 @@ def get_request_method(path, request_data):
     elif path.startswith("/echo/"):
         string: str = path.split("/")[-1]
         # ['', 'echo', 'hello']
-        return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
+
+        compression_scheme = ""
+
+        # find comppresion_scehme from header.
+        for header in request_data:
+            if header.startswith("Accept-Encoding:"):
+                compression_scheme = header.split(": ")[1]
+                break
+
+        if compression_scheme == "gzip":
+            return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
+
+        else:
+            return f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string)}\r\n\r\n{string}".encode()
 
     elif path.startswith("/user-agent"):
         user_agent = request_data[2].split(": ")[1]
